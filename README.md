@@ -27,7 +27,7 @@ Please note that recovery and update operations are supported only for trigger-b
 
 1. Under "Administration -> Media types", import the zbx_mediatype_cwpsa-6.4.yaml file.
    
-2. Open the newly added *ConnectWise Manage PSA* media type and replace all Parameter value **<placeholders>** with your values.
+2. Open the newly added *ConnectWise Manage PSA* media type and replace all Parameter value **\<placeholders\>** with your values.
 
    - Parameterss with names starting with **cwpsa_api_** are required for authentication
      - **cwpsa_api_clientid** is the Client ID string you generated from ConnectWise above
