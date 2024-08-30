@@ -31,15 +31,27 @@ Please note that recovery and update operations are supported only for trigger-b
 
    - Parameterss with names starting with **cwpsa_api_** are required for authentication
      - **cwpsa_api_clientid** is the Client ID string you generated from ConnectWise above
-     - **cwpsa_api_user** is the concatenation of the APIMember's company name and public API key with a + symbol between (e.g. xyzcorp+7c21wqSxILBLqC98J)
+     - **cwpsa_api_user** is the concatenation of the APIMember's company name and public API key with a + symbol between
+       (e.g. xyzcorp+7c21wqSxILBLqC98J)
      - **cwpsa_api_password** is the APIMember's private API key
      - **cwpsa_api_url** is the full path to the service tickets API on your ConnectWise Manage instsance (e.g. https://yourcw.com/v4_6_release/apis/3.0/service/tickets/)
 
+   - **cwpsa_serviceboard_name** must contain the exact name of the ConnectWise service board you wish to create tickets on
+  
+   - **cwpsa_status_new** must contain the exact name of the **status** you wish to use on this board for new tickets
+  
+   - **cwpsa_status_resolved** must contain the exact name of the **status** you wish to use for tickets which have had their Zabbix Problem *resolved*
+  
+   - **cwpsa_type** must contain the exact name of the **type** you wish to be applied to new tickets
+  
+   - **cwpsa_resolution_flag** is used to choose whether or not you wish to set the **Resolution** flag against the ticket note added when a ticket is update on Problem resolution
+     This value must be true or false
+
    - Parameters starting with **cwpsa_cmpy_** are optionally used to map tickets to their correct companies in ConnectWise
-      - This implementation is rather simplistic in that it uses the first three letters of the Zabbix Problem alert subject to identify the company
+      - This implementation is rather simplistic in that it uses the first three letters of the Zabbix Problem *alert subject* to identify the company
 
       - **cwpsa_cmpy_DEFAULT** must be used and must be set to the ConnectWise Client ID for the default company you wish to create tickets against (This is a Catchall scenario)
-      - **cwpsa_cmpy_XXX**, as am example will contain the ConnectWise Client ID for the company you wish to assign a ticket who's Problem alert subject starts with XXX
+      - **cwpsa_cmpy_XXX**, as an example, will contain the ConnectWise Client ID for the company you wish to assign a ticket who's Problem *alert subject* starts with XXX
 
          - You can add a new Parameter called **cwpsa_cmpy_ABC** with your Australian Broadcasting Corporation customer's Client ID as its value
          - Now if you trigger a Zabbix Problem with an alert subject of "*ABC - Monitored host down*", this webhook will create the ConnectWise ticket against the Australian Broadcasting Corporation company
