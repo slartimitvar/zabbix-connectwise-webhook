@@ -88,4 +88,5 @@ Zabbix 6.4.x
 
 5. Review **Messages Templates** options to customise as you need
 
-  - These configurations will only be used if you setup trigger action operations without custom messages
+   - These configurations will only be used if you setup trigger action operations without custom messages
+
