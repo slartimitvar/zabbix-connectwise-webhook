@@ -9,10 +9,10 @@ Please note that recovery and update operations are supported only for trigger-b
 
 2. Assign a role to this user which allows it to:
 
-   Create new tickets
-   Update ticket status
-   Add ticket notes
-   Set ticket resolution flag
+   - Create new tickets
+   - Update ticket status
+   - Add ticket notes
+   - Set ticket resolution flag
    
 # Setting up webhook in Zabbix
 
