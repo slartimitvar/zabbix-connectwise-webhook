@@ -84,7 +84,7 @@ Zabbix 6.4.x
   
 ### 4. Setup custom trigger actions if using Connectwise company mappings
 
-   - As there is no easy way to write the three letter company acronym into the Problem *alert subject* in the webhook media **Messages Templates** config, the only way to get ConnectWise tickets mapping to their correct companies is to write individual alert triggers with custom operations which include the three letter acronym in the *alert subject*
+   - As there is no easy way to write the three letter company acronym into the Problem *alert subject* in the webhook media **Messages Templates** config, the only way to get ConnectWise tickets mapping to their correct companies is to write individual alert triggers with custom operations which include the three letter acronym asthe first three characters of the *alert subject*
 
 ### 5. Review **Messages Templates** options to customise as you need
 
