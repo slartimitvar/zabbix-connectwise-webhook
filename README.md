@@ -64,7 +64,7 @@ Zabbix 6.4.x
 
       - Add as many **cwpsa_cmpy_???** Parameters as you need to map all your tickets for monitored customers to their correct ConnectWise company record
     
-   - Parameters starting with **cwpsa_priority_** are optionally used to manage the ConnectWise *priority* assigned to a ticket when it created depending on the Zabbix *severity*.
+   - Parameters starting with **cwpsa_priority_** are optionally used to manage the ConnectWise *priority* assigned to a ticket as it's created, depending on the Zabbix *severity*.
   
         - To enable priority mapping the **cwpsa_priority_is_used** Parameter must be set to **true** and if so:
 
