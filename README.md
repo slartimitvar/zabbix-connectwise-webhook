@@ -29,7 +29,7 @@ Please note that recovery and update operations are supported only for trigger-b
    
 2. Open the newly added *ConnectWise Manage PSA* media type and replace all Parameter value **\<placeholders\>** with your values.
 
-   - Parameterss with names starting with **cwpsa_api_** are required for authentication
+   - Parameters with names starting with **cwpsa_api_** are required for authentication
      - **cwpsa_api_clientid** is the Client ID string you generated from ConnectWise above
      - **cwpsa_api_user** is the concatenation of the APIMember's company name and public API key with a + symbol between
        (e.g. xyzcorp+7c21wqSxILBLqC98J)
