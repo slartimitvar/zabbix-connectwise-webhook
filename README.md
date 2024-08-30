@@ -8,18 +8,18 @@ Zabbix 6.4.x
 
 # Setting up ConnectWise
 
-1. First, create an APImember user for creating incidents.
+## 1. First, create an APImember user for creating incidents.
 
-2. Assign a role to this user which allows it to:
+## 2. Assign a role to this user which allows it to:
 
    - Create new tickets
    - Update ticket status
    - Add ticket notes
    - Set ticket resolution flag
 
-3. Generate an API Keys set for the APIMember on its **API Keys** tab
+## 3. Generate an API Keys set for the APIMember on its **API Keys** tab
 
-4. Generate a ConnectWise Client ID to allow API interactivity
+## 4. Generate a ConnectWise Client ID to allow API interactivity
 
    - Go to https://developer.connectwise.com/ClientID
    - Click the Create new integration button and fill out the request details
@@ -28,9 +28,9 @@ Zabbix 6.4.x
    
 # Setting up webhook in Zabbix
 
-1. Under "Administration -> Media types", import the zbx_mediatype_cwpsa-6.4.yaml file.
+## 1. Under "Administration -> Media types", import the zbx_mediatype_cwpsa-6.4.yaml file.
    
-2. Open the newly added *ConnectWise Manage PSA* media type and replace all Parameter value **\<placeholders\>** with your values.
+## 2. Open the newly added *ConnectWise Manage PSA* media type and replace all Parameter value **\<placeholders\>** with your values.
 
    - Parameters with names starting with **cwpsa_api_** are required for authentication
      - **cwpsa_api_clientid** is the Client ID string you generated from ConnectWise above
@@ -76,17 +76,17 @@ Zabbix 6.4.x
                 - Information mapped to *Priority 4 - Low*
                 - Not Classified mapped to *Priority 3 - Medium*
 
-3. Setup Zabbix user.
+## 3. Setup Zabbix user.
    
    - Create a new Zabbix user with the **ConnectWise Manage PSA webhook** as an enabled media
    - There is no need to use a valid **Send to** value as this is handled within the **ConnectWise Manage PSA webhook** config.
    - Make sure this user has User Group memberships to give it permission to monitor the required hosts
   
-4. Setup custom trigger actions if using Connectwise company mappings
+## 4. Setup custom trigger actions if using Connectwise company mappings
 
    - As there is no easy way write the three letter company acronym into the Problem *alert subject* in the webhook media **Messages Templates** config, the only way to get ConnectWise tickets mapping to their correct companies is to write individual alert triggers with custom operations which include the three letter acronym in the *alert subject*
 
-5. Review **Messages Templates** options to customise as you need
+## 5. Review **Messages Templates** options to customise as you need
 
    - These configurations will only be used if you setup trigger action operations without custom messages
 
