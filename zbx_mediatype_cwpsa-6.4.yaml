@@ -220,7 +220,7 @@ zabbix_export:
                         }
                     }
                     // Prepare CW priority mapping
-                    else if (params.cwpsa_priority_is_used) {
+                    else if (params.cwpsa_priority_is_used === 'true') {
                         if (key.startsWith('cwpsa_priority_for_')) {
                             if (params[key] !== '' && [1, 2, 3, 4].indexOf(parseInt(params[key])) !== -1) {
                                 cwpsa['priority_' + key.substring(19)] = params[key];
@@ -290,7 +290,7 @@ zabbix_export:
             };
         
             // Add CW priority info to data object if priorities are being used
-            if (params.cwpsa_priority_is_used) {
+            if (params.cwpsa_priority_is_used === 'true') {
                 if (typeof cwpsa['priority_' + severities[params.event_nseverity].name] !== 'undefined') {
                     data.priority = { name: priorities[cwpsa['priority_' + severities[params.event_nseverity].name] - 1] };
                 } else {
@@ -321,7 +321,9 @@ zabbix_export:
                     method = 'post';
                     notedata.text = params.alert_message;
                     notedata.detailDescriptionFlag = true;
-                    notedata.resolutionFlag = params.cwpsa_resolution_flag;
+                    if (params.cwpsa_resolution_flag === 'true') {
+                        notedata.resolutionFlag = true;
+                    }
                     // Make request
                     CWPSA.setParams(cwpsa);
                     CWPSA.setProxy(params.HTTPProxy);
