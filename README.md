@@ -45,8 +45,8 @@ Please note that recovery and update operations are supported only for trigger-b
   
    - **cwpsa_type** must contain the exact name of the **type** you wish to be applied to new tickets
   
-   - **cwpsa_resolution_flag** is used to choose whether or not you wish to set the **Resolution** flag against the ticket note added when a ticket is update on Problem resolution
-     This value must be true or false
+   - **cwpsa_resolution_flag** is used to choose whether or not you wish to set the **Resolution** flag against the ticket note added when a ticket is updated upon Problem resolution
+     (This value must be **true** or **false**)
 
    - Parameters starting with **cwpsa_cmpy_** are optionally used to map tickets to their correct companies in ConnectWise
       - This implementation is rather simplistic in that it uses the first three letters of the Zabbix Problem *alert subject* to identify the company
