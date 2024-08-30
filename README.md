@@ -57,4 +57,4 @@ Please note that recovery and update operations are supported only for trigger-b
          - You can add a new Parameter called **cwpsa_cmpy_ABC** with your Australian Broadcasting Corporation customer's Client ID as its value
          - Now if you trigger a Zabbix Problem with an alert subject of "*ABC - Monitored host down*", this webhook will create the ConnectWise ticket against the Australian Broadcasting Corporation company
 
-      - Add as many **cwpsa_cmpy_???** Parameters as you need to map all your monitored customers to their ConnectWise company record
+      - Add as many **cwpsa_cmpy_???** Parameters as you need to map all your tickets for monitored customers to their correct ConnectWise company record
