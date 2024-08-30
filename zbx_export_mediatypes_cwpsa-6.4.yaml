@@ -1,7 +1,7 @@
 zabbix_export:
   version: '6.4'
   media_types:
-    - name: 'ConnectWise Manage PSA Test'
+    - name: 'ConnectWise Manage PSA'
       type: WEBHOOK
       parameters:
         - name: alert_message
