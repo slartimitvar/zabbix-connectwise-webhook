@@ -2,6 +2,7 @@
 
 This guide describes how to integrate a Zabbix 6.4 installation with ConnectWise Manage PSA using the Zabbix webhook feature. It provides instructions on setting up a media type, API authentication and an action in Zabbix.
 Please note that recovery and update operations are supported only for trigger-based events.
+This work is based on the example available in the ServiceNow webhook which is included with Zabbix
 
 **Tested/Supported versions**: Zabbix 6.4.x
 
