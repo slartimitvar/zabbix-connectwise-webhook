@@ -9,6 +9,8 @@ Please note that recovery and update operations are supported only for trigger-b
 
 ### 1. First, create an APImember user for creating incidents.
 
+   - Under **System** -> **Members** -> **API Members**, create your new API member
+
 ### 2. Assign a role to this user which allows it to:
 
    - Create new tickets
@@ -17,6 +19,9 @@ Please note that recovery and update operations are supported only for trigger-b
    - Set ticket resolution flag
 
 ### 3. Generate an API Keys set for the APIMember on its **API Keys** tab
+
+   - Under **System** -> **Members** -> **API Members**, open your new API member
+   - On the **API Keys** tab, create a new API key pair and copy these to use later in the Zabbix setup
 
 ### 4. Generate a ConnectWise Client ID to allow API interactivity
 
@@ -27,9 +32,17 @@ Please note that recovery and update operations are supported only for trigger-b
    
 # Setting up webhook in Zabbix
 
-### 1. Under "Administration -> Media types", import the zbx_mediatype_cwpsa-6.4.yaml file.
+### 1. Import this webhook media type
+
+   - Download the zbx_mediatype_cwpsa-6.4.yaml file from this repository
+   - Under **Administration** -> **Media types**, import the zbx_mediatype_cwpsa-6.4.yaml file.
    
-### 2. Open the newly added *ConnectWise Manage PSA* media type and replace all Parameter value **\<placeholders\>** with your values.
+### 2. Setup webhook Parameters
+
+   - Open the newly added *ConnectWise Manage PSA* media type and set it up by filling the needed Paramter values
+
+   - Review all the Parameter values which are prefilled with **\<placeholders\>** and fill with your values.
+        - Parameters for Connectwise Priority and Company mappings are mostly optional (except the DEFAULT company client ID)
 
    - Parameters with names starting with **cwpsa_api_** are required for authentication
      - **cwpsa_api_clientid** is the Client ID string you generated from ConnectWise above
@@ -83,9 +96,14 @@ Please note that recovery and update operations are supported only for trigger-b
   
 ### 4. Setup custom trigger actions if using Connectwise company mappings
 
-   - As there is no easy way to write the three letter company acronym into the Problem *alert subject* in the webhook media **Messages Templates** config, the only way to get ConnectWise tickets mapping to their correct companies is to write individual alert triggers with custom operations which include the three letter acronym asthe first three characters of the *alert subject*
+   - As there is no easy way to write the three letter company acronym into the Problem *alert subject* in the webhook media **Messages Templates** config, the only way to get ConnectWise tickets mapping to their correct companies is to write individual alert triggers with custom operations which include the three letter acronym as the first three characters of the *alert subject*
 
 ### 5. Review **Messages Templates** options to customise as you need
 
    - These configurations will only be used if you setup trigger action operations without custom messages
 
+### 6. Enable and test
+
+   - Enable the ConnectWise Manage PSA webhook and test
+   - The quickest way I've found for running a repeatable test trigger is to create an item and trigger which watches for a file on the Zabbix server with 10s interval for quick response, then create and delete this file for trigger testing
+        - A mostly up to date procedure for achieving this is documented at https://aaronsaray.com/2020/zabbix-test-notification/
