@@ -38,7 +38,7 @@ This work is based on the example available in the ServiceNow webhook which is i
 ### 1. Import this webhook media type
 
    - Download the zbx_mediatype_cwpsa-6.4.yaml file from this repository
-   - Under **Administration** -> **Media types**, import the zbx_mediatype_cwpsa-6.4.yaml file.
+   - Under **Alerts** -> **Media types**, import the zbx_mediatype_cwpsa-6.4.yaml file.
    
 ### 2. Setup webhook Parameters
 
