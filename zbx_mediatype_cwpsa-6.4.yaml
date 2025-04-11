@@ -153,7 +153,7 @@ zabbix_export:
                 if (request.getStatus() < 200 || request.getStatus() >= 300) {
                     var message = 'Request failed with status code ' + request.getStatus();
         
-                    if (response !== null && typeof response.error.message !== 'undefined'
+                    if (response !== null && response.error && typeof response.error.message !== 'undefined'
                         && Object.keys(response.error).length > 0) {
                         message += ': ' + JSON.stringify(response.error.message);
                     }
