@@ -272,7 +272,7 @@ zabbix_export:
         
             // Set data for new ticket post
             data = {
-                summary: params.alert_subject,
+                summary: params.alert_subject.substring(0,100),
                 recordType: 'ServiceTicket',
                 board: {
                     name: params.cwpsa_serviceboard_name
