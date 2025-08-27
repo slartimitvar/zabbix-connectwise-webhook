@@ -6,7 +6,7 @@ Please note that recovery and update operations are supported only for trigger-b
 
 This work is based on the example available in the ServiceNow webhook which is included with Zabbix
 
-**Tested/Supported versions**: Zabbix 6.4.x, 7.0.16, 7.4.0
+**Tested/Supported versions**: Zabbix 6.4.x, 7.0.16, 7.4.0, 7.4.1
 
 # Setting up ConnectWise
 
