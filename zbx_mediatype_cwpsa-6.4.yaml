@@ -58,6 +58,10 @@ zabbix_export:
           value: '{EVENT.UPDATE.STATUS}'
         - name: event_value
           value: '{EVENT.VALUE}'
+        - name: cwpsa_search_existing_ticket
+          value: 'false'
+        - name: cwpsa_status_reopen
+          value: '<your cw status for reopened tickets>'
       status: DISABLED
       script: |
         var CWPSA = {
@@ -124,6 +128,10 @@ zabbix_export:
                     : ''));
         
                 switch (method) {
+                    case 'get':
+                        response = request.get(url);
+                        break;
+                        
                     case 'post':
                         response = request.post(url, data);
                         break;
@@ -163,11 +171,41 @@ zabbix_export:
                 else if (typeof response !== 'object') {
                     throw 'Cannot create/update ConnectWise Manage PSA ticket. Response result is not an object. Check debug log for more information.';
                 }
-                else if (typeof response.id === 'undefined') {
+                else if (method !== 'get' && typeof response.id === 'undefined') {
                     throw 'Cannot create/update ConnectWise Manage PSA ticket. Response result ID is undefined. Check debug log for more information.';
                 }
         
                 return response;
+            },
+            
+            searchExistingTicket: function(summary, company_id) {
+                try {
+                    // Search for tickets with exact same summary (subject) that are not closed
+                    // Build the conditions string and URL encode it
+                    var conditions = 'company/identifier="' + company_id + '" AND status/name!="Closed" AND summary="' + summary + '"';
+                    var encodedConditions = encodeURIComponent(conditions);
+                    
+                    // Store the original URL to restore it after the search
+                    var originalUrl = CWPSA.params.url;
+                    var searchUrl = originalUrl + '?conditions=' + encodedConditions + '&pageSize=1&orderBy=' + encodeURIComponent('id desc');
+
+                    Zabbix.log(4, '[ ConnectWise Manage PSA Webhook ] Compiled search URL: ' + searchUrl);
+                    
+                    CWPSA.params.url = searchUrl;
+                    var searchResponse = CWPSA.request('get');
+                    
+                    // Restore the original URL
+                    CWPSA.params.url = originalUrl;
+                    
+                    if (Array.isArray(searchResponse) && searchResponse.length > 0) {
+                        return searchResponse[0];
+                    }
+                    return null;
+                }
+                catch (error) {
+                    Zabbix.log(4, '[ ConnectWise Manage PSA Webhook ] Failed to search for existing ticket: ' + error);
+                    return null;
+                }
             }
         };
         
@@ -183,7 +221,7 @@ zabbix_export:
                     'alert_subject', 'alert_message', 'event_source', 'event_value',
                     'event_update_status', 'event_recovery_value', 'event_nseverity',
                     'cwpsa_cmpy_DEFAULT', 'cwpsa_resolution_flag', 'cwpsa_serviceboard_name',
-                    'cwpsa_status_resolved'
+                    'cwpsa_status_resolved', 'cwpsa_search_existing_ticket'
                 ],
                 severities = [
                     {name: 'not_classified', color: '#97AAB3'},
@@ -235,6 +273,12 @@ zabbix_export:
                         throw 'Parameter "' + key + '" can\'t be empty.';
                     }
                 });
+        
+            // Check if cwpsa_status_reopen is required when search is enabled
+            if (params.cwpsa_search_existing_ticket === 'true' && 
+                (!params.cwpsa_status_reopen || params.cwpsa_status_reopen === '')) {
+                throw 'Parameter "cwpsa_status_reopen" is required when "cwpsa_search_existing_ticket" is enabled.';
+            }
         
             // Check event_source sanity
             if ([0, 1, 2, 3].indexOf(parseInt(params.event_source)) === -1) {
@@ -347,12 +391,69 @@ zabbix_export:
                 }
         
             } else {
-            // Standard ticket creation request
-                method = 'post';
-                CWPSA.setParams(cwpsa);
-                CWPSA.setProxy(params.HTTPProxy);
-                CWPSA.setFields(data, fields);
-                var response = CWPSA.request(method, data);
+            // Check if we should search for existing tickets
+                var existingTicket = null;
+                if (params.cwpsa_search_existing_ticket === 'true' && params.event_source === '0' && params.event_value === '1') {
+                    // Only search for existing tickets on new problems
+                    CWPSA.setParams(cwpsa);
+                    CWPSA.setProxy(params.HTTPProxy);
+                    
+                    // Use the same summary that would be used for a new ticket
+                    var searchSummary = params.alert_subject.substring(0,100);
+                    
+                    Zabbix.log(4, '[ ConnectWise Manage PSA Webhook ] Searching for existing ticket with summary: ' + searchSummary);
+                    existingTicket = CWPSA.searchExistingTicket(searchSummary, company_id);
+                }
+                
+                if (existingTicket !== null) {
+                    // Existing ticket found - reopen it
+                    Zabbix.log(4, '[ ConnectWise Manage PSA Webhook ] Found existing ticket ID: ' + existingTicket.id + ', reopening...');
+                    
+                    // Update ticket status to reopen
+                    method = 'patch';
+                    patchdata = {};
+                    patchdata.op = "replace";
+                    patchdata.path = "status/name";
+                    patchdata.value = params.cwpsa_status_reopen;
+                    
+                    // Use clean base URL and add ticket ID
+                    // Ensure base URL ends with /
+                    var baseUrl = params.cwpsa_api_url;
+                    if (!baseUrl.endsWith('/')) {
+                        baseUrl += '/';
+                    }
+                    CWPSA.setParams(cwpsa);
+                    CWPSA.setProxy(params.HTTPProxy);
+                    CWPSA.setFields(patchdata, fields);
+                    CWPSA.params.url = baseUrl + existingTicket.id;
+                    var response = CWPSA.request(method, patchdata);
+                    
+                    // Add a note about the problem recurring
+                    method = 'post';
+                    notedata = {};
+                    notedata.text = '**PROBLEM RECURRED**\n\n' + params.alert_message;
+                    notedata.internalAnalysisFlag = true;  // Make this an internal note
+                    notedata.detailDescriptionFlag = false;
+                    notedata.resolutionFlag = false;
+                    
+                    // Use clean base URL for the notes endpoint
+                    CWPSA.setParams(cwpsa);
+                    CWPSA.setProxy(params.HTTPProxy);
+                    CWPSA.setFields(notedata, fields);
+                    CWPSA.params.url = baseUrl + existingTicket.id + '/notes';
+                    CWPSA.request(method, notedata);
+                    
+                    // Use existing ticket ID for the response
+                    response = existingTicket;
+                    
+                } else {
+                    // No existing ticket or search disabled - create new ticket
+                    method = 'post';
+                    CWPSA.setParams(cwpsa);
+                    CWPSA.setProxy(params.HTTPProxy);
+                    CWPSA.setFields(data, fields);
+                    var response = CWPSA.request(method, data);
+                }
             }
         
             // Get CW ticket ID into problem tag if enabled
