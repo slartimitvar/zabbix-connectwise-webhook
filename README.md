@@ -52,7 +52,7 @@ This work is based on the example available in the ServiceNow webhook which is i
      - **cwpsa_api_user** is the concatenation of the APIMember's company name and public API key with a + symbol between
        (e.g. xyzcorp+7c21wqSxILBLqC98J)
      - **cwpsa_api_password** is the APIMember's private API key
-     - **cwpsa_api_url** is the full path to the service tickets API on your ConnectWise Manage instsance
+     - **cwpsa_api_url** is the full path to the service tickets API on your ConnectWise Manage instance
        (e.g. https://yourcw.com/v4_6_release/apis/3.0/service/tickets/)
 
    - **cwpsa_serviceboard_name** must contain the exact name of the ConnectWise service board you wish to create tickets on
