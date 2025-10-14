@@ -78,6 +78,9 @@ This work is based on the example available in the ServiceNow webhook which is i
          - Now if you trigger a Zabbix Problem with an alert subject of "*ABC - Monitored host down*", this webhook will create the ConnectWise ticket against the Australian Broadcasting Corporation company
 
       - Add as many **cwpsa_cmpy_???** Parameters as you need to map all your tickets for monitored customers to their correct ConnectWise company record
+
+     - To use tags instead of problem name, we can change a parameter
+       - **cwpsa_cmpy_customer_match** is set to **problem name** by default. Change it to **customer tag** instead. If you then add a tag customer:XXX to your hosts, this will be used instead of problem name.
     
    - Parameters starting with **cwpsa_priority_** are optionally used to manage the ConnectWise *priority* assigned to a ticket as it's created, depending on the Zabbix *severity*.
   
