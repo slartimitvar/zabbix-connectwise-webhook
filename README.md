@@ -91,6 +91,10 @@ This work is based on the example available in the ServiceNow webhook which is i
                 - Information mapped to *Priority 4 - Low*
                 - Not Classified mapped to *Priority 3 - Medium*
 
+   - **cwpsa_configuration** Allows us to match configurations within ConnectWise. By default it isn't set and will not be used. If set to {HOST.NAME} for example, it can be used to match configurations.
+     - When matching configurations using {HOST.NAME} make sure there is an exact match between the hostname in Zabbix and configuration in ConnectWise
+     - When the configuration is matched, the SITE and PRIORITY will be taken from the configuration instead of the default and Zabbix severity.
+
 ### 3. Setup Zabbix user.
    
    - Create a new Zabbix user with the **ConnectWise Manage PSA webhook** as an enabled media
