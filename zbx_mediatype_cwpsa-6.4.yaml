@@ -16,6 +16,8 @@ zabbix_export:
           value: 'https://<YOUR CW FQDN>/v4_6_release/apis/3.0/service/tickets/'
         - name: cwpsa_api_user
           value: '<your apimember company+publicKey>'
+        - name: cwpsa_cmpy_customer_match
+          value: 'problem name'
         - name: cwpsa_cmpy_DEFAULT
           value: '<default company client id>'
         - name: cwpsa_cmpy_XXX
@@ -271,13 +273,46 @@ zabbix_export:
                 throw 'Recovery operations are supported only for trigger-based actions.';
             }
         
-            // Get correct company id parameter from first three characters of subject else use default
-            cmpy_tla = params.alert_subject.substring(0,3);
-            if (typeof cwpsa['cmpy_tla_' + cmpy_tla] !== 'undefined' ) {
-                company_id = cwpsa['cmpy_tla_' + cmpy_tla];
-            } else {
-                company_id = params.cwpsa_cmpy_DEFAULT;
-            }
+        	// === Company matching: by problem-name TLA (default) or by "customer" problem tag ===
+        	var matchMode = (params.cwpsa_cmpy_customer_match || 'problem name').toString().toLowerCase();
+        	var matchKey = null;
+        
+        	if (matchMode === 'customer tag') {
+        	    // 1) simplest: media passes a direct customer param
+        	    if (typeof params.customer === 'string' && params.customer.trim()) {
+        	        matchKey = params.customer.trim().toUpperCase();
+        	    }
+        	    // 2) or standard Zabbix {EVENT.TAGSJSON}
+        	    else if (params.event_tags_json) {
+        	        try {
+        	            var tags = (typeof params.event_tags_json === 'string')
+        	                ? JSON.parse(params.event_tags_json)
+        	                : params.event_tags_json;
+        	            if (Array.isArray(tags)) {
+        	                for (var i = 0; i < tags.length; i++) {
+        	                    var k = (tags[i].tag || tags[i].key || '').toString().toLowerCase();
+        	                    if (k === 'customer' && tags[i].value) {
+        	                        matchKey = tags[i].value.toString().trim().toUpperCase();
+        	                        break;
+        	                    }
+        	                }
+        	            }
+        	        } catch (e) { /* ignore and fall back */ }
+        	    }
+        	}
+        
+        	// Fallback to original behavior
+        	if (!matchKey) {
+        	    matchKey = (params.alert_subject || '').substring(0, 3).toUpperCase();
+        	}
+        
+        	// Resolve to company_id via cwpsa_cmpy_XXX mapping; default if not found
+        	if (typeof cwpsa['cmpy_tla_' + matchKey] !== 'undefined') {
+        	    company_id = cwpsa['cmpy_tla_' + matchKey];
+        	} else {
+        	    company_id = params.cwpsa_cmpy_DEFAULT;
+        	}
+        	// === end company matching ===
         
             // --- (NEW) Resolve configuration first so we can set site/priority on the ticket before creation ---
             var matchedConfig = null;
