@@ -1,5 +1,5 @@
 zabbix_export:
-  version: '6.4'
+  version: '7.0'
   media_types:
     - name: 'ConnectWise Manage PSA'
       type: WEBHOOK
@@ -20,6 +20,8 @@ zabbix_export:
           value: '<default company client id>'
         - name: cwpsa_cmpy_XXX
           value: '<company xxx client id>'
+        - name: cwpsa_configuration
+          value: '<for example use the {HOST.NAME} to match a device>'
         - name: cwpsa_priority_for_average
           value: '<cw priority-average sev prob (2?)>'
         - name: cwpsa_priority_for_disaster
@@ -58,7 +60,6 @@ zabbix_export:
           value: '{EVENT.UPDATE.STATUS}'
         - name: event_value
           value: '{EVENT.VALUE}'
-      status: DISABLED
       script: |
         var CWPSA = {
             params: {},
@@ -133,6 +134,10 @@ zabbix_export:
                         response = request.patch(url, data);
                         break;
         
+                    case 'get': // added
+                        response = request.get(url);
+                        break;
+        
                     default:
                         throw 'Unsupported HTTP request method: ' + method;
                 }
@@ -160,11 +165,15 @@ zabbix_export:
         
                     throw message + ' Check debug log for more information.';
                 }
-                else if (typeof response !== 'object') {
-                    throw 'Cannot create/update ConnectWise Manage PSA ticket. Response result is not an object. Check debug log for more information.';
+                else if (response === null || (typeof response !== 'object' && !Array.isArray(response))) {
+                    throw 'Cannot create/update ConnectWise Manage PSA ticket. Response result is not an object/array. Check debug log for more information.';
                 }
-                else if (typeof response.id === 'undefined') {
-                    throw 'Cannot create/update ConnectWise Manage PSA ticket. Response result ID is undefined. Check debug log for more information.';
+                else {
+                    // Only require an ID when we *create a ticket* (POST /service/tickets)
+                    var isTicketCreate = (method === 'post') && /\/service\/tickets\/?$/i.test(url);
+                    if (isTicketCreate && (typeof response.id === 'undefined')) {
+                        throw 'Cannot create/update ConnectWise Manage PSA ticket. Response result ID is undefined. Check debug log for more information.';
+                    }
                 }
         
                 return response;
@@ -270,6 +279,39 @@ zabbix_export:
                 company_id = params.cwpsa_cmpy_DEFAULT;
             }
         
+            // --- (NEW) Resolve configuration first so we can set site/priority on the ticket before creation ---
+            var matchedConfig = null;
+            if (typeof params.cwpsa_configuration === 'string' && params.cwpsa_configuration !== '') {
+                try {
+                    // Derive API root (strip /service/tickets...) and trim trailing slash
+                    var apiRoot = cwpsa.url;
+                    var svcIdx = apiRoot.toLowerCase().indexOf('/service/tickets');
+                    if (svcIdx !== -1) apiRoot = apiRoot.substring(0, svcIdx);
+                    if (apiRoot.endsWith('/')) apiRoot = apiRoot.slice(0, -1);
+        
+                    // Exact match on name + company/identifier
+                    var safeName = params.cwpsa_configuration.replace(/"/g, '\\"');
+                    var conditions = 'name="' + safeName + '" and company/identifier="' + company_id + '"';
+                    var cfgSearchUrl = apiRoot + '/company/configurations?conditions=' + encodeURIComponent(conditions) + '&pageSize=1';
+        
+                    var lookupParams = JSON.parse(JSON.stringify(cwpsa));
+                    lookupParams.url = cfgSearchUrl;
+        
+                    CWPSA.setParams(lookupParams);
+                    CWPSA.setProxy(params.HTTPProxy);
+                    var cfgList = CWPSA.request('get');
+        
+                    if (Array.isArray(cfgList) && cfgList.length && typeof cfgList[0].id !== 'undefined') {
+                        matchedConfig = cfgList[0];
+                        Zabbix.log(4, '[CW ConfigLookup] Found configuration "' + params.cwpsa_configuration + '" (ID ' + matchedConfig.id + ') for company "' + company_id + '".');
+                    } else {
+                        Zabbix.log(3, '[CW ConfigLookup] No configuration found with exact name "' + params.cwpsa_configuration + '" for company "' + company_id + '".');
+                    }
+                } catch (cfgLookupErr) {
+                    Zabbix.log(3, '[CW ConfigLookup] Lookup failed: ' + cfgLookupErr + '. Proceeding without configuration.');
+                }
+            }
+        
             // Set data for new ticket post
             data = {
                 summary: params.alert_subject.substring(0,100),
@@ -289,8 +331,38 @@ zabbix_export:
                 initialDescription: params.alert_message
             };
         
-            // Add CW priority info to data object if priorities are being used
-            if (params.cwpsa_priority_is_used === 'true') {
+            // If configuration has a site, set it now so it’s on the ticket at creation
+            if (matchedConfig && matchedConfig.site && (matchedConfig.site.id || matchedConfig.site.name)) {
+                data.site = {};
+                if (matchedConfig.site.id)   data.site.id   = matchedConfig.site.id;
+                if (matchedConfig.site.name) data.site.name = matchedConfig.site.name;
+                Zabbix.log(4, '[CW ConfigApply] Ticket site set from configuration: ' + JSON.stringify(data.site));
+            }
+        
+            // Priority: prefer a "Default Priority" custom field on the configuration if present; else use severity mapping
+            var configPriorityName = null;
+            if (matchedConfig && Array.isArray(matchedConfig.customFields)) {
+                for (var i = 0; i < matchedConfig.customFields.length; i++) {
+                    var cf = matchedConfig.customFields[i];
+                    if (typeof cf.caption === 'string' && cf.caption.toLowerCase() === 'default priority' && cf.value) {
+                        configPriorityName = String(cf.value);
+                        break;
+                    }
+                }
+            }
+        
+            if (configPriorityName) {
+                // Only set if it looks like a valid CW priority name
+                if (priorities.indexOf(configPriorityName) !== -1) {
+                    data.priority = { name: configPriorityName };
+                    Zabbix.log(4, '[CW ConfigApply] Ticket priority set from configuration custom field: ' + configPriorityName);
+                } else {
+                    Zabbix.log(3, '[CW ConfigApply] Default Priority "' + configPriorityName + '" not in allowed list; falling back to severity mapping.');
+                }
+            }
+        
+            // If no config-derived priority, use your existing severity→priority mapping when enabled
+            if (!data.priority && params.cwpsa_priority_is_used === 'true') {
                 if (typeof cwpsa['priority_' + severities[params.event_nseverity].name] !== 'undefined') {
                     data.priority = { name: priorities[cwpsa['priority_' + severities[params.event_nseverity].name] - 1] };
                 } else {
@@ -303,7 +375,7 @@ zabbix_export:
             if (params.event_source === '0' && (params.event_value === '0' || params.event_update_status === '1')) {
                 process_tags = false;
         
-                // If update is status "Resolved", set new ticket status and add note
+                // If update is status "RESOLVED", set new ticket status and add note
                 if (params.event_status === "RESOLVED") {
                     // Set patch data
                     method = 'patch';
@@ -331,9 +403,8 @@ zabbix_export:
                     CWPSA.params.url += '/notes';
                     var response = CWPSA.request(method, notedata);
         
-        
                 } else {
-                // Add an update note only
+                    // Add an update note only
                     method = 'post';
                     notedata.text = params.alert_message;
                     notedata.detailDescriptionFlag = true;
@@ -347,12 +418,30 @@ zabbix_export:
                 }
         
             } else {
-            // Standard ticket creation request
+                // Create the ticket (with site/priority already applied if config found)
                 method = 'post';
                 CWPSA.setParams(cwpsa);
                 CWPSA.setProxy(params.HTTPProxy);
                 CWPSA.setFields(data, fields);
                 var response = CWPSA.request(method, data);
+        
+                // Attach the configuration to the new ticket so it appears on the Configurations tab
+                try {
+                    if (matchedConfig && typeof matchedConfig.id !== 'undefined') {
+                        var linkParams = JSON.parse(JSON.stringify(cwpsa));
+                        linkParams.url = cwpsa.url + response.id + '/configurations';
+                        var linkBody = { id: matchedConfig.id };
+        
+                        CWPSA.setParams(linkParams);
+                        CWPSA.setProxy(params.HTTPProxy);
+                        CWPSA.setFields(linkBody, fields);
+                        CWPSA.request('post', linkBody);
+        
+                        Zabbix.log(4, '[CW ConfigLink] Linked configuration ID ' + matchedConfig.id + ' to ticket ' + response.id);
+                    }
+                } catch (cfgErr) {
+                    Zabbix.log(3, '[CW ConfigLink] Post-create link failed: ' + cfgErr);
+                }
             }
         
             // Get CW ticket ID into problem tag if enabled
