@@ -1,12 +1,12 @@
 # ConnectWise Manage PSA webhook
 
-This guide describes how to integrate a Zabbix 6.4 up to 7.4 installation with ConnectWise Manage PSA using the Zabbix webhook feature. It provides instructions for installing and configuring this ConnectWise Manage PSA webhook media type, its API authentication and an action in Zabbix.
+This guide describes how to integrate a Zabbix 7.0 up to 7.4 installation with ConnectWise Manage PSA using the Zabbix webhook feature. It provides instructions for installing and configuring this ConnectWise Manage PSA webhook media type, its API authentication and an action in Zabbix.
 
 Please note that recovery and update operations are supported only for trigger-based events.
 
 This work is based on the example available in the ServiceNow webhook which is included with Zabbix
 
-**Tested/Supported versions**: Zabbix 6.4.x, 7.0.16, 7.4.0, 7.4.1, 7.4.2
+**Tested/Supported versions**: Zabbix 7.0.19, 7.4.3
 
 # Setting up ConnectWise
 
@@ -37,8 +37,8 @@ This work is based on the example available in the ServiceNow webhook which is i
 
 ### 1. Import this webhook media type
 
-   - Download the zbx_mediatype_cwpsa-6.4.yaml file from this repository
-   - Under **Alerts** -> **Media types**, import the zbx_mediatype_cwpsa-6.4.yaml file.
+   - Download the zbx_mediatype_cwpsa-7.0.yaml file from this repository
+   - Under **Alerts** -> **Media types**, import the zbx_mediatype_cwpsa-7.0.yaml file.
    
 ### 2. Setup webhook Parameters
 
@@ -78,6 +78,9 @@ This work is based on the example available in the ServiceNow webhook which is i
          - Now if you trigger a Zabbix Problem with an alert subject of "*ABC - Monitored host down*", this webhook will create the ConnectWise ticket against the Australian Broadcasting Corporation company
 
       - Add as many **cwpsa_cmpy_???** Parameters as you need to map all your tickets for monitored customers to their correct ConnectWise company record
+
+     - To use tags instead of problem name, we can change a parameter
+       - **cwpsa_cmpy_customer_match** is set to **problem name** by default. Change it to **customer tag** instead. If you then add a tag customer:XXX to your hosts, this will be used instead of problem name.
     
    - Parameters starting with **cwpsa_priority_** are optionally used to manage the ConnectWise *priority* assigned to a ticket as it's created, depending on the Zabbix *severity*.
   
@@ -90,6 +93,10 @@ This work is based on the example available in the ServiceNow webhook which is i
                 - Average and Warning mapped to *Priority 2 - High*
                 - Information mapped to *Priority 4 - Low*
                 - Not Classified mapped to *Priority 3 - Medium*
+
+   - **cwpsa_configuration** Allows us to match configurations within ConnectWise. By default it isn't set and will not be used. If set to {HOST.NAME} for example, it can be used to match configurations.
+     - When matching configurations using {HOST.NAME} make sure there is an exact match between the hostname in Zabbix and configuration in ConnectWise
+     - When the configuration is matched, the SITE and PRIORITY will be taken from the configuration instead of the default and Zabbix severity.
 
 ### 3. Setup Zabbix user.
    
